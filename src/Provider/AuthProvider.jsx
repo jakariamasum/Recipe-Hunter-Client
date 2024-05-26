@@ -1,5 +1,10 @@
-import { getAuth, signInWithPopup } from "firebase/auth";
-import { GoogleAuthProvider } from "firebase/auth/cordova";
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
+import { GoogleAuthProvider } from "firebase/auth";
 import { useState, useEffect, createContext } from "react";
 import app from "../firebase/firebase.config";
 
@@ -13,46 +18,47 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const login = async () => {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    // Get JWT token from backend
-    const token = await user.getIdToken();
-    const userData = {
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      email: user.email,
-      token,
-    };
-
-    // Call backend to save the user and initialize coins
-    const response = await fetch("/api/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(userData),
-    });
-    const data = await response.json();
-    setCurrentUser({ ...userData, coins: data.coins });
+    return signInWithPopup(auth, provider);
   };
 
   const logout = () => {
-    auth.signOut();
-    setCurrentUser(null);
+    signOut(auth)
+      .then(() => {})
+      .catch((error) => console.log(error.message));
   };
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        const token = await user.getIdToken();
-        const response = await fetch("/api/users/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        setCurrentUser({ ...data, token });
+    const unsubscribe = onAuthStateChanged(auth, async (loggedUser) => {
+      if (loggedUser) {
+        const userData = {
+          displayName: loggedUser?.displayName,
+          email: loggedUser?.email,
+          photoURL: loggedUser?.photoURL,
+        };
+        setCurrentUser(loggedUser);
+        try {
+          // Send user data to backend
+          const response = await fetch("http://localhost:5000/api/users", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(userData),
+          });
+
+          console.log(response);
+          if (response.ok) {
+            // If user creation on backend is successful, extract and store the authentication token
+            const result = await response.json();
+            console.log("result", result);
+            localStorage.setItem("tokenId", result.authToken);
+          } else {
+            // If there's an error in creating the user on the backend, handle it
+            console.error("Failed to create user on backend");
+          }
+        } catch (error) {
+          console.error("Error while communicating with backend:", error);
+        }
       } else {
         setCurrentUser(null);
       }

@@ -1,40 +1,31 @@
+import { useContext } from "react";
 import { Link, NavLink } from "react-router-dom";
+import { AuthContext } from "../../Provider/AuthProvider";
 
 const Navbar = () => {
-  const user = false;
+  const { currentUser, login, logout } = useContext(AuthContext);
   return (
     <nav className=" shadow-lg px-28 bg-orange-400 text-white p-4 flex justify-between items-center">
       <div className="text-lg font-bold">
         <Link to="/">Recipe Hunter</Link>
       </div>
       <div>
-        <NavLink
-          to="/all-recipes"
-          className="mr-4"
-          activeClassName="text-yellow-200"
-        >
+        <NavLink to="/all-recipes" className="mr-4">
           All Recipes
         </NavLink>
-        {user ? (
+        {currentUser ? (
           <>
-            <NavLink
-              to="/add-recipe"
-              className="mr-4"
-              activeClassName="text-yellow-200"
-            >
+            <NavLink to="/add-recipe" className="mr-4">
               Add Recipe
             </NavLink>
-            <NavLink
-              to="/purchase-coins"
-              className="mr-4"
-              activeClassName="text-yellow-200"
-            >
-              Coins 10
+            <NavLink to="/purchase-coins" className="mr-4">
+              {currentUser.coin}
             </NavLink>
-            <button>Logout</button>
+            <NavLink>{currentUser.displayName}</NavLink>
+            <button onClick={logout}>Logout</button>
           </>
         ) : (
-          <button>Login with Google</button>
+          <button onClick={login}>Login</button>
         )}
       </div>
     </nav>
