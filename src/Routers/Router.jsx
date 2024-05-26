@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import Home from "../Layout/Home/Home";
 import Main from "../Layout/Main/Main";
+import AddRecipe from "../pages/AddRecipe/AddRecipe";
 
 export const router = createBrowserRouter([
   {
@@ -13,7 +14,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "/add-recipe",
-        element: "Add recepie",
+        element: <AddRecipe />,
       },
     ],
   },
