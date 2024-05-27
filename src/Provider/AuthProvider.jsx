@@ -1,3 +1,4 @@
+import { useState, useEffect, createContext } from "react";
 import {
   getAuth,
   onAuthStateChanged,
@@ -5,8 +6,10 @@ import {
   signOut,
 } from "firebase/auth";
 import { GoogleAuthProvider } from "firebase/auth";
-import { useState, useEffect, createContext } from "react";
 import app from "../firebase/firebase.config";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export const AuthContext = createContext(null);
 
@@ -34,26 +37,23 @@ export function AuthProvider({ children }) {
           displayName: loggedUser?.displayName,
           email: loggedUser?.email,
           photoURL: loggedUser?.photoURL,
+          coin: 50,
         };
-        setCurrentUser(loggedUser);
+        setCurrentUser(userData);
         try {
           // Send user data to backend
-          const response = await fetch("http://localhost:5000/api/users", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-            },
-            body: JSON.stringify(userData),
-          });
+          const response = await axios.post(
+            "https://recipe-hunter-server-black.vercel.app/api/users",
+            userData
+          );
+          console.log(response.data.authToken);
 
-          console.log(response);
-          if (response.ok) {
-            // If user creation on backend is successful, extract and store the authentication token
-            const result = await response.json();
-            console.log("result", result);
-            localStorage.setItem("tokenId", result.authToken);
+          if (response.status === 200) {
+            const authToken = response.data.authToken;
+            localStorage.setItem("authorization", "Bears " + authToken);
+            // Show toast notification
+            toast.success(`Welcome ${userData.displayName}`);
           } else {
-            // If there's an error in creating the user on the backend, handle it
             console.error("Failed to create user on backend");
           }
         } catch (error) {
@@ -70,12 +70,15 @@ export function AuthProvider({ children }) {
 
   const value = {
     currentUser,
+    setCurrentUser,
     login,
     logout,
+    loading,
   };
 
   return (
     <AuthContext.Provider value={value}>
+      <ToastContainer />
       {!loading && children}
     </AuthContext.Provider>
   );
